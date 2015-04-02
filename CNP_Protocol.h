@@ -330,7 +330,8 @@ struct _CREATE_ACCOUNT_REQUEST
 struct _CREATE_ACCOUNT_RESPONSE
 {
     DWORD                      m_dwResult;                 ///< Contain Success or Error code from CER_TYPE
- 
+    QWORD                      m_qwPAN;                    ///< Primary Account NO.
+
     _CREATE_ACCOUNT_RESPONSE(DWORD dwResult = cnp::CER_ERROR)
         : m_dwResult(dwResult)
     { };
@@ -510,7 +511,8 @@ struct _TRANSACTION_QUERY_RESPONSE
 {
     DWORD                      m_dwResult;          ///< Contain Success or Error code from CER_TYPE
     WORD                       m_wTransactionCount; ///< number of transactions returned in array
-    TRANSACTION                m_rgTransactions[];  ///< array of unspecified size of Transaction records
+    /*struct hack*/
+    TRANSACTION                m_rgTransactions[0];  ///< array of unspecified size of Transaction records
 
     _TRANSACTION_QUERY_RESPONSE(DWORD dwResult = cnp::CER_ERROR, WORD wTransactionCount = 0)
         : m_dwResult(dwResult),
@@ -534,7 +536,7 @@ struct _BALANCE_QUERY_RESPONSE
     DWORD                      m_dwResult;    ///< Contain Success or Error code from CER_TYPE
     DWORD                      m_dwBalance;   ///< Client account balance
 
-    _BALANCE_QUERY_RESPONSE(DWORD dwResult, DWORD dwBalance)
+    _BALANCE_QUERY_RESPONSE(DWORD dwResult = cnp::CER_ERROR, DWORD dwBalance = 0)
         : m_dwResult(dwResult), m_dwBalance(dwBalance)
     { };
 };

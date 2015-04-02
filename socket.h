@@ -100,17 +100,13 @@ namespace sock {
     class TCPCommunicateSocket: public TCPSocket {
 
     public:
-        virtual ~TCPCommunicateSocket(){}
-        TCPCommunicateSocket() {}
+        virtual ~TCPCommunicateSocket(){ delete strm_in; }
+        TCPCommunicateSocket() { this->strm_in = new istream(&buff_in); }
         TCPCommunicateSocket(int fd);
         TCPCommunicateSocket(int fd, struct sockaddr_in &addr, socklen_t len);
-        istream *getIn() { return this->strm_in; }
+        istream &getIn() { return *this->strm_in; }
         ssize_t send(char *buf, size_t len);
         ssize_t recv();
-
-        void dump() {
-            cout << std::string(raw_buf_, nrecv_);
-        }
 
     protected:
         stringbuf buff_in;

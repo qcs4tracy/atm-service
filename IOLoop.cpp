@@ -3,7 +3,6 @@
 //
 
 #include "IOLoop.h"
-#include "CNP_Protocol.h"
 
 void ioloop::EventsManager::init(int nev) {
 
@@ -40,7 +39,7 @@ bool ioloop::IOLoop::setup_listen_sock(in_addr_t host, int port) {
     int opval = 1;
     setsockopt(this->listen.get_sock_fd(), SOL_SOCKET, SO_REUSEADDR, (const void *) &opval, sizeof(opval));
 
-    if (!this->listen.bind(INADDR_LOOPBACK, 5999)) {
+    if (!this->listen.bind(host, port)) {
         perror("bind() failed!");
         return false;
     }
@@ -62,7 +61,7 @@ bool ioloop::IOLoop::enable_listning(int backlog) {
 void ioloop::IOLoop::start() {
 
     int nev;
-    epoll_event *events, ev;
+    epoll_event *events;
     events = eventsM_.events;
     sock::TCPCommunicateSocket *cl_sk;
 
@@ -100,9 +99,15 @@ void ioloop::IOLoop::start() {
                     int nr = cl_sk->recv();
 
                     if (nr > 0) {
-                        istream *s = cl_sk->getIn();
-                        s->read(reinterpret_cast<char *>(&cq), sizeof(cq));
-                        cout << cq.m_Hdr.m_wClientID << " " << cq.m_Request.m_dwValidationKey << endl;
+//                        istream &s = cl_sk->getIn();
+//                        s.read(reinterpret_cast<char *>(&cq), sizeof(cq));
+//                        cout << cq.m_Hdr.m_wClientID << " " << cq.m_Request.m_dwValidationKey << endl;
+                        handler_.process_msg(cl_sk->getIn());
+                        char *msg = handler_.get_res_msg();
+                        size_t msg_sz = handler_.res_msg_size();
+                        if (cl_sk->send(msg, msg_sz) > 0)
+                            printf("send response success\n");
+
                     }
 
                     if (nr == 0) {

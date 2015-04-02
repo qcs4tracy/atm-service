@@ -81,6 +81,25 @@ int num_of_fields(MYSQL_STMT *mystmt) {
 }
 
 
+int num_of_rows(MYSQL_STMT *mystmt) {
+
+    /* Fetch result set meta information */
+    MYSQL_RES *prepare_meta_result = mysql_stmt_result_metadata(mystmt);
+    int r;
+
+    if (!prepare_meta_result) {
+        SET_ERROR_MSG("mysql_stmt_result_metadata() failed: %s\n", mysql_stmt_error(mystmt));
+        return DB_ERROR;
+    }
+
+    /* Get total columns in the query */
+    r = mysql_num_rows(prepare_meta_result);
+    mysql_free_result(prepare_meta_result);
+
+    return r;
+}
+
+
 int exec_stmt(MYSQL_STMT *mystmt) {
 
     if (mysql_stmt_execute(mystmt)) {
@@ -123,5 +142,12 @@ int stmt_fetch_row(MYSQL_STMT *mystmt) {
 
 }
 
+int close_stmt(MYSQL_STMT *mystmt) {
+    if (mysql_stmt_close(mystmt)) {
+        SET_ERROR_MSG("mysql_stmt_close() failed: %s\n", mysql_stmt_error(mystmt));
+        return DB_ERROR;
+    }
+    return DB_OK;
+}
 
 

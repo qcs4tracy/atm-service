@@ -11,6 +11,7 @@ extern "C" {
 }
 
 #include "socket.h"
+#include "proto_impl.h"
 
 namespace ioloop {
 
@@ -58,6 +59,7 @@ namespace ioloop {
     private:
         sock::TCPServerSocket listen;
         EventsManager eventsM_;
+        CNProtoHandler handler_;
     };
 
 

@@ -15,7 +15,7 @@
 #define DB_ERROR -1
 #define DB_OK 0
 
-char *db_error();
+extern char *db_error();
 
 MYSQL *init_conn(char const *host, char const *usrname, char const *passwd,
                  char const *dbname, unsigned int port);
@@ -26,6 +26,8 @@ int bind_stmt_params(MYSQL_STMT *mystmt, MYSQL_BIND binds[], int n);
 
 int num_of_fields(MYSQL_STMT *mystmt);
 
+int num_of_rows(MYSQL_STMT *mystmt);
+
 int exec_stmt(MYSQL_STMT *mystmt);
 
 int bind_stmt_result(MYSQL_STMT *mystmt, MYSQL_BIND binds[]);
@@ -33,5 +35,7 @@ int bind_stmt_result(MYSQL_STMT *mystmt, MYSQL_BIND binds[]);
 int store_result(MYSQL_STMT *mystmt);
 
 int stmt_fetch_row(MYSQL_STMT *mystmt);
+
+int close_stmt(MYSQL_STMT *mystmt);
 
 #endif //ATM_SERVICE_SOURCE_FILE_H
