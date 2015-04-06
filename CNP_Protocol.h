@@ -340,26 +340,15 @@ struct _CREATE_ACCOUNT_RESPONSE
 /// Logon Request Primitive
 struct _LOGON_REQUEST
 {
-    char                       m_szFirstName[MAX_NAME_LEN]; ///< User's first name
+    QWORD                      m_PAN;//< account number
+    //char                       m_szFirstName[MAX_NAME_LEN]; ///< User's first name
     WORD                       m_wPIN;                      ///< Personal Identification Number
 
-    /// Default constructor
-    _LOGON_REQUEST()
-        : m_wPIN(0)
-    { memset(m_szFirstName, 0, sizeof(m_szFirstName) ); };
-
     /// Initialization constructor
-    _LOGON_REQUEST(const char* szFirstName, WORD wPIN)
-        : m_wPIN(wPIN)
-    { memset(m_szFirstName, 0, sizeof(m_szFirstName) );
-      set_FirstName(szFirstName); };
+    _LOGON_REQUEST(QWORD qwPAN = 0, WORD wPIN = 0)
+        : m_wPIN(wPIN), m_PAN(qwPAN)
+    {};
 
-/**
-    @param [in] szSet   address containing null terminated first name
-*/
-    void set_FirstName(const char* szSet)
-    { if (szSet)
-         strncpy(m_szFirstName, szSet, COUNTOF(m_szFirstName) - 1); };
 };
 
 /// Logon Response Result Primitive
@@ -394,6 +383,15 @@ struct _LOGOFF_RESPONSE
         : m_dwResult(dwResult)
     { };
 };
+
+struct _ERROR_RESPONSE
+{
+    DWORD                   m_dwResult;
+    _ERROR_RESPONSE(DWORD dwResult = cnp::CER_ERROR)
+    : m_dwResult(dwResult)
+            { };
+};
+
 
 
 /// Deposit Request Primitive
@@ -511,8 +509,9 @@ struct _TRANSACTION_QUERY_RESPONSE
 {
     DWORD                      m_dwResult;          ///< Contain Success or Error code from CER_TYPE
     WORD                       m_wTransactionCount; ///< number of transactions returned in array
-    /*struct hack*/
-    TRANSACTION                m_rgTransactions[0];  ///< array of unspecified size of Transaction records
+
+    /*struct hack, dynamically grow this field to any number of transaction entities*/
+    TRANSACTION                m_rgTransactions[1];  ///< array of unspecified size of Transaction records
 
     _TRANSACTION_QUERY_RESPONSE(DWORD dwResult = cnp::CER_ERROR, WORD wTransactionCount = 0)
         : m_dwResult(dwResult),
@@ -534,10 +533,11 @@ struct _BALANCE_QUERY_REQUEST
 struct _BALANCE_QUERY_RESPONSE
 {
     DWORD                      m_dwResult;    ///< Contain Success or Error code from CER_TYPE
-    DWORD                      m_dwBalance;   ///< Client account balance
+    DWORD                      m_dwCashBalance;   ///< Client account balance
+    DWORD                      m_dwCheckBalance;
 
-    _BALANCE_QUERY_RESPONSE(DWORD dwResult = cnp::CER_ERROR, DWORD dwBalance = 0)
-        : m_dwResult(dwResult), m_dwBalance(dwBalance)
+    _BALANCE_QUERY_RESPONSE(DWORD dwResult = cnp::CER_ERROR, DWORD dwCashBalance = 0, DWORD wCheckBalance = 0)
+        : m_dwResult(dwResult), m_dwCashBalance(dwCashBalance), m_dwCheckBalance(wCheckBalance)
     { };
 };
 
@@ -708,7 +708,7 @@ struct CREATE_ACCOUNT_REQUEST
 
 /// Default constructor
     CREATE_ACCOUNT_REQUEST()
-        : m_Hdr(),
+        : m_Hdr(MT_CREATE_ACCOUNT_REQUEST_ID, sizeof(m_Request), 0, g_dwSequenceNumber++, 0),
           m_Request()
     { };
 
@@ -807,17 +807,17 @@ struct LOGON_REQUEST
 
     /// Default constructor
     LOGON_REQUEST()
-        : m_Hdr(),
+        : m_Hdr(MT_LOGON_REQUEST_ID, sizeof(m_Request), 0, g_dwSequenceNumber++, 0),
           m_Request()
     { };
 
     /// Initialization constructor
     LOGON_REQUEST(WORD wClientID,         ///< Server provided Client ID
-                  const char* szFirstName, 
+                  QWORD qwPAN,
                   WORD  wPIN, 
                   DWORD dwContext = 0)    ///< Option Client Field
         : m_Hdr(MT_LOGON_REQUEST_ID, sizeof(m_Request), wClientID, g_dwSequenceNumber++, dwContext ),
-          m_Request(szFirstName, wPIN)
+          m_Request(qwPAN, wPIN)
     { };
 
 /**
@@ -841,8 +841,8 @@ struct LOGON_REQUEST
     DWORD       get_Context(void) const
     { return m_Hdr.get_Context(); };
 
-    const char* get_FirstName(void) const
-    { return m_Request.m_szFirstName; };
+    QWORD get_PAN(void) const
+    { return m_Request.m_PAN; };
     
     WORD        get_PIN(void) const
     { return m_Request.m_wPIN; };
@@ -1082,6 +1082,9 @@ struct WITHDRAWAL_RESPONSE
        m_Response(dwResult)
     { };
 
+    WITHDRAWAL_RESPONSE(): m_Hdr(), m_Response()
+    {};
+
     DWORD    get_MsgType(void) const
     { return m_Hdr.get_MsgType(); };
 
@@ -1100,7 +1103,7 @@ struct BALANCE_QUERY_REQUEST
 
     /// Default constructor
     BALANCE_QUERY_REQUEST()
-        : m_Hdr(),
+        : m_Hdr(MT_BALANCE_QUERY_REQUEST_ID, sizeof(m_Request), 0, g_dwSequenceNumber++, 0),
           m_Request()
     { };
 
@@ -1208,6 +1211,10 @@ struct TRANSACTION_QUERY_RESPONSE
     STD_HDR                            m_Hdr;
     prim::_TRANSACTION_QUERY_RESPONSE  m_Response;
 
+
+    TRANSACTION_QUERY_RESPONSE():m_Hdr(), m_Response()
+    {};
+
     TRANSACTION_QUERY_RESPONSE(DWORD dwResult,
                                WORD  wClientID,
                                WORD  wTransactionCount,
@@ -1215,7 +1222,7 @@ struct TRANSACTION_QUERY_RESPONSE
                                DWORD dwContext)        ///< [optional field] copied from Client's _REQUEST msg
       : m_Hdr(MT_TRANSACTION_QUERY_RESPONSE_ID, sizeof(m_Response), wClientID, dwSequenceNumber, dwContext),
         m_Response(dwResult, wTransactionCount)
-    { };
+    {};
 
     DWORD get_MsgType(void) const
     { return m_Hdr.get_MsgType(); };

@@ -100,22 +100,22 @@ namespace sock {
     class TCPCommunicateSocket: public TCPSocket {
 
     public:
-        virtual ~TCPCommunicateSocket(){ delete strm_in; }
-        TCPCommunicateSocket() { this->strm_in = new istream(&buff_in); }
+        virtual ~TCPCommunicateSocket();
+        TCPCommunicateSocket(): buff_in(new stringbuf), buff_out(new stringbuf) {}
         TCPCommunicateSocket(int fd);
         TCPCommunicateSocket(int fd, struct sockaddr_in &addr, socklen_t len);
-        istream &getIn() { return *this->strm_in; }
+        istream &getIn() { return buff_in; }
         ssize_t send(char *buf, size_t len);
         ssize_t recv();
 
     protected:
-        stringbuf buff_in;
-        stringbuf buff_out;
-        istream *strm_in;
+        size_t nrecv_;
+        istream buff_in;
+        ostream buff_out;
         char raw_buf_[BUFF_SIZE];
         size_t raw_buf_size_ = BUFF_SIZE;
-        size_t nrecv_;
         bool pending_write = false;
+        bool pending_read = false;
     };
 
 

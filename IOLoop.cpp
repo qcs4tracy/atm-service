@@ -99,14 +99,15 @@ void ioloop::IOLoop::start() {
                     int nr = cl_sk->recv();
 
                     if (nr > 0) {
-//                        istream &s = cl_sk->getIn();
-//                        s.read(reinterpret_cast<char *>(&cq), sizeof(cq));
-//                        cout << cq.m_Hdr.m_wClientID << " " << cq.m_Request.m_dwValidationKey << endl;
+
                         handler_.process_msg(cl_sk->getIn());
                         char *msg = handler_.get_res_msg();
                         size_t msg_sz = handler_.res_msg_size();
+
+                        cout << msg_sz << endl;
+
                         if (cl_sk->send(msg, msg_sz) > 0)
-                            printf("send response success\n");
+                            cout << "send response success\n";
 
                     }
 
@@ -115,7 +116,7 @@ void ioloop::IOLoop::start() {
                     }
 
                     if (nr == E_ERROR) {
-                        perror("read error");
+                        cerr << "read() error:" << strerror(errno);
                         delete cl_sk;
                     }
 

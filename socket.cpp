@@ -3,7 +3,10 @@
 //
 
 #include "socket.h"
+#include "log4z.h"
+#include <cstring>
 
+using namespace zsummer::log4z;
 
 bool sock::Socket::close() { return ::close(this->sock_fd) == 0; }
 
@@ -27,42 +30,56 @@ bool sock::Socket::make_non_blocking(bool yes)
     return true;
 }
 
-sock::TCPCommunicateSocket::TCPCommunicateSocket(int fd): TCPSocket(fd) {
-    this->strm_in = new istream(&buff_in);
-}
+sock::TCPCommunicateSocket::TCPCommunicateSocket(int fd): buff_in(new stringbuf),
+                                                          buff_out(new stringbuf),TCPSocket(fd) {}
 
 sock::TCPCommunicateSocket::TCPCommunicateSocket(int fd, struct sockaddr_in &addr,
-                                                 socklen_t len): TCPSocket(fd) {
+                                                 socklen_t len): buff_in(new stringbuf),
+                                                                 buff_out(new stringbuf), TCPSocket(fd) {
     this->addr_ = addr;
     this->sock_len = len;
-    this->strm_in = new istream(&buff_in);
 }
+
+sock::TCPCommunicateSocket::~TCPCommunicateSocket() {
+    delete buff_in.rdbuf();
+    delete buff_out.rdbuf();
+}
+
 
 ssize_t sock::TCPCommunicateSocket::recv() {
 
     char * buf = this->raw_buf_;
     size_t nrecv = 0;
     size_t buf_size = this->raw_buf_size_;
+    this->nrecv_ = 0;
+    bool _again = false;
 
     do {
 
         nrecv = ::recv(this->sock_fd, buf, buf_size, 0);
 
         if (nrecv == 0) {/*the remote side close the connection*/
-            return nrecv;
+
+            return this->nrecv_;
+
         } else if (nrecv > 0) {/*read from the stream*/
-            this->buff_in.sputn(buf, nrecv);
-            this->nrecv_ = nrecv;
-            if (nrecv < buf_size) {
-                return nrecv;
+
+            this->buff_in.rdbuf()->sputn(buf, nrecv);
+            this->nrecv_ += nrecv;
+
+            if (nrecv < buf_size) {//all data read
+                return this->nrecv_;
             }
-            return E_AGAIN;
+            //probably still have data to read
+            _again = true;
         }
 
-    } while (errno == EINTR);
+    } while (errno == EINTR || _again);
 
+    LOGE("receive data error:" << std::strerror(errno));
     return E_ERROR;
 }
+
 
 ssize_t sock::TCPCommunicateSocket::send(char *buf, size_t len) {
 
@@ -77,14 +94,19 @@ ssize_t sock::TCPCommunicateSocket::send(char *buf, size_t len) {
         }
 
         if (n == 0) {
-            /*log error*/
+            LOGE("no data being write.");
             return n;
         }
 
         if (errno == EINTR || errno == EAGAIN) {
-            if (errno == EAGAIN)
+            if (errno == EAGAIN) {
+                /*buffer the data for latter write*/
+                buff_out.rdbuf()->sputn(buf, len);
+                pending_write = true;
                 return E_AGAIN;
+            }
         } else {
+            LOGE("write socket error:" << strerror(errno));
             return E_ERROR;
         }
 
@@ -92,7 +114,9 @@ ssize_t sock::TCPCommunicateSocket::send(char *buf, size_t len) {
 
 }
 
+
 bool sock::TCPServerSocket::bind(in_addr_t host, int port) {
+
     if (!is_valid())
         return false;
     this->addr_.sin_family = AF_INET;
@@ -123,7 +147,7 @@ sock::TCPCommunicateSocket* sock::TCPServerSocket::accept() {
         return new TCPCommunicateSocket(cfd, caddr, len);
     }
     if (errno != EWOULDBLOCK && errno != EAGAIN)
-        perror("accept() failed!");
+        LOGE("accept() failed.");
     return NULL;
 }
 
