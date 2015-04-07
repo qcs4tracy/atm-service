@@ -220,6 +220,30 @@ bool AtmDataAccess::addTransRec(const TransRec &record) {
 }
 
 
+bool AtmDataAccess::createBalanceRec(ulonglong accnt_no, ulonglong cash, ulonglong check) {
+
+    sql::PreparedStatement *stmt;
+    int updateCnt = 0;
+
+    try {
+        stmt = _conn->prepareStatement("INSERT INTO accnt_balance (accnt_no, cash_bl, check_bl) VALUES(?, ?, ?)");
+        stmt->setUInt64(1, accnt_no);
+        stmt->setUInt64(2, cash);
+        stmt->setUInt64(3, check);
+
+        updateCnt = stmt->executeUpdate();
+
+        delete stmt;
+        return updateCnt > 0;
+
+    } catch (sql::SQLException &e) {
+        LOGE("create balance record failed for account[" << accnt_no << "]:" << e.what());
+        return false;
+    }
+
+}
+
+
 TransRecSet* AtmDataAccess::getRecentTransRec(ulonglong accnt_no, uint_ cnt) {
 
     sql::PreparedStatement *stmt;
@@ -274,54 +298,3 @@ AccntInfo& AccntInfo::operator=(AccntInfo rhs) {
     swap_(rhs);
     return *this;
 }
-
-
-//
-//int main () {
-//
-//    ILog4zManager::getInstance()->start();
-//
-//    AccntInfo newAcc("Piang", "Pei", "piang@live.cn", 1345467, 35454785, 343544, 4388576071061090);
-//    ClientsManager &cm = ClientsManager::getInstance();
-//    ClientsManager::cid_t id = cm.nextClientID();
-//    cm.add(id, newAcc, ClientEntity::CL_CONNECTED);
-//    const ClientEntity &ce = cm.getByID(id);
-//    cout << id << endl;
-//    //ce.accnt_.
-//    std::cout << ce.accnt_.first_name << " " << ce.accnt_.last_name << " (" << ce.accnt_.accnt_no << ")" << std::endl;
-//    std::cout << cm.numOfClients() << endl;
-//    cm.remove(id);
-//    std::cout << cm.numOfClients() << endl;
-//
-//    AtmDataAccess da(DB_HOST, DB_USERNAME, DB_PASSWD, DB_NAME, DB_PORT);
-//    AccntInfo *acc = da.getAccntByID(4388576071061090);
-//    if(acc)
-//        std::cout << acc->first_name << " " << acc->last_name << " (" << acc->accnt_no << ")" << std::endl;
-//    delete acc;
-//
-//    //AccntInfo newAcc("Piang", "Pei", "piang@live.cn", 1345467, 35454785, 343544);
-//    //if (da.createAccnt(newAcc))
-//        //cout << "create account success" << endl;
-//
-//
-//    AccntBalance *acc_bl = da.getAccntBalance(4388576071061090);
-//    if (acc_bl)
-//        cout << "cash: " << acc_bl->cash << endl << "check: " << acc_bl->check << endl;
-//    if (da.updateAccntBalance(4388576071061090, 2000, AccntBalance::AT_CASH))
-//        cout << "update balance success" << endl;
-//    if (da.addTransRec(TransRec(4388576071061090, TransRec::TT_DEPOSIT, 0, 1000)))
-//        cout << "insert succ" << endl;
-//    TransRecSet *rs = da.getRecentTransRec(4388576071061090, 5);
-//    if (rs) {
-//
-//        cout << rs->count << " records:" << endl;
-//        for (int i = 0; i < rs->count; ++i) {
-//            LOGE( "amount: " << ((double)rs->records[i].amount/100)
-//            << ", type: " << rs->records[i].type
-//            << ", date: " << time_utils::TimeUtil::UTC2Local((const time_t *)&rs->records[i].date));
-//        }
-//        delete rs;
-//
-//    }
-
-//}

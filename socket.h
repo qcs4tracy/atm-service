@@ -69,6 +69,8 @@ namespace sock {
                 this->initialized = true;
         }
 
+        in_addr& getInAddr() { return addr_.sin_addr; }
+
     protected:
         bool addr_set_ = false;
         struct sockaddr_in addr_;

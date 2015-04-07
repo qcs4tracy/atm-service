@@ -107,6 +107,7 @@ namespace atm_data {
         AtmDataAccess(std::string db_host, std::string db_user, std::string db_passwd, std::string db_name, int port);
         AccntInfo * getAccntByID(ulonglong id, uint_ id_type_);
         bool createAccnt(const AccntInfo &acc);
+        bool createBalanceRec(ulonglong accnt_no, ulonglong cash, ulonglong check);
         bool updateAccntBalance(ulonglong accnt_no, ulonglong amount, AccntBalance::ACCNT_TYPE type);
         AccntBalance *getAccntBalance(ulonglong accnt_no);
         bool addTransRec(const TransRec &record);

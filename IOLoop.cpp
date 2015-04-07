@@ -3,6 +3,10 @@
 //
 
 #include "IOLoop.h"
+#include "log4z.h"
+#include <arpa/inet.h>
+
+using namespace zsummer::log4z;
 
 void ioloop::EventsManager::init(int nev) {
 
@@ -87,6 +91,7 @@ void ioloop::IOLoop::start() {
                         if (!cl_sk)
                             break;
 
+                        LOGI("Aceept Connection from " << inet_ntoa(cl_sk->getInAddr()));
                         cl_sk->make_non_blocking(true);
                         eventsM_.add_read_ev(cl_sk->get_sock_fd(), cl_sk);
                     }
@@ -103,20 +108,24 @@ void ioloop::IOLoop::start() {
                         handler_.process_msg(cl_sk->getIn());
                         char *msg = handler_.get_res_msg();
                         size_t msg_sz = handler_.res_msg_size();
+                        ssize_t nsd_ = cl_sk->send(msg, msg_sz);
 
-                        cout << msg_sz << endl;
+                        if (nsd_ == EAGAIN) {
+                            /*put the socket in the EPOLL_IN events to wait for sending*/
+                        }
 
-                        if (cl_sk->send(msg, msg_sz) > 0)
-                            cout << "send response success\n";
+                        if (nsd_ == E_ERROR) {
+                            LOGE("ERROR: send message failed on file descriptor " << cl_sk->get_sock_fd());
+                        }
 
                     }
 
-                    if (nr == 0) {
+                    if (nr == 0) { /*client side close connection*/
                         delete cl_sk;
                     }
 
                     if (nr == E_ERROR) {
-                        cerr << "read() error:" << strerror(errno);
+                        cerr << "ERROR: read() failed -" << strerror(errno);
                         delete cl_sk;
                     }
 

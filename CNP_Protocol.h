@@ -962,6 +962,11 @@ struct DEPOSIT_REQUEST
     STD_HDR                    m_Hdr;
     prim::_DEPOSIT_REQUEST     m_Request;
 
+    DEPOSIT_REQUEST()
+            : m_Hdr(MT_DEPOSIT_REQUEST_ID, sizeof(m_Request), 0, g_dwSequenceNumber++ , 0),
+              m_Request()
+    { };
+
     /// Initialization constructor
     DEPOSIT_REQUEST(WORD  wClientID,     
                     DWORD dwAmount, 
@@ -1033,6 +1038,11 @@ struct WITHDRAWAL_REQUEST
 {
     STD_HDR                    m_Hdr;
     prim::_WITHDRAWAL_REQUEST  m_Request;
+
+    WITHDRAWAL_REQUEST()
+            :m_Hdr(MT_WITHDRAWAL_REQUEST_ID, sizeof(m_Request), 0, g_dwSequenceNumber++, 0 ),
+             m_Request()
+    { };
 
     /// Initialization constructor
     WITHDRAWAL_REQUEST(WORD  wClientID, 
@@ -1167,6 +1177,11 @@ struct TRANSACTION_QUERY_REQUEST
 {
     STD_HDR                           m_Hdr;
     prim::_TRANSACTION_QUERY_REQUEST  m_Request;
+
+    TRANSACTION_QUERY_REQUEST()
+            :m_Hdr(MT_TRANSACTION_QUERY_REQUEST_ID, sizeof(m_Request), 0, g_dwSequenceNumber++, 0),
+             m_Request()
+    { };
 
     /// Initialization constructor
     TRANSACTION_QUERY_REQUEST(WORD  wClientID,

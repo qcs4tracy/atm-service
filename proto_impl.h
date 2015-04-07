@@ -80,6 +80,8 @@ public:
     CNProtoHandler();
     virtual ~CNProtoHandler(){
         delete _da;
+        if (_has_dyn_buff && _dyn_buff != NULL)
+            delete _dyn_buff;
     }
     size_t res_msg_size();
     char *get_res_msg();
@@ -99,11 +101,12 @@ private:
     void _handleDeposit();
     void _handleWithdraw();
     void _handleBalanceLookup();
+    void _handleLogOff();
     struct _uRequest _request;
     struct _uResponse _response;
     char * _buff;
     bool _has_dyn_buff = false;
-    char * _dyn_buff;
+    char * _dyn_buff = NULL;
     ClientsManager *_cm;
     atm_data::AtmDataAccess *_da;
 };

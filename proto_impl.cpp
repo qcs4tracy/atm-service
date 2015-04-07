@@ -83,8 +83,19 @@ void CNProtoHandler::_handleTransLookup() {
     n = _request.body.trans_q.m_wTransactionCount;
     _uResponse *rsp = &_response;
     cnp::TRANSACTION *trans;
+    ClientsManager::cid_t cid =  _request.header.m_wClientID;
+    atm_data::ulonglong accno;
 
-    transRecs = _da->getRecentTransRec(4388576071061090, n);
+    const ClientEntity &ce = _cm->getByID(cid);
+
+    if (ce.state_ != ClientEntity::CL_LOGON) {
+        LOGE("Transaction Query Invalid: Account[" << ce.accnt_.accnt_no << "] Not Logged on.");
+        _response.body.trans_q.m_dwResult = cnp::CER_CLIENT_NOT_LOGGEDON;
+        return;
+    }
+
+    accno = ce.accnt_.accnt_no;
+    transRecs = _da->getRecentTransRec(accno, n);
 
     //Error if NULL is returned here
     if (!transRecs) {
@@ -206,13 +217,16 @@ void CNProtoHandler::_handleAccntCreat() {
                                               creat_ac->m_szEmailAddress, creat_ac->m_dwSSNumber,
                                               creat_ac->m_dwDLNumber, creat_ac->m_wPIN) ) ) {
 
+
         acc = _da->getAccntByID(_request.body.creat_accnt.m_dwSSNumber, 1);
 
         if(acc) {
-            _response.body.creat_accnt.m_dwResult = cnp::CER_SUCCESS;
-            _response.body.creat_accnt.m_qwPAN = acc->accnt_no;
-            delete acc;
-            return;
+            if (_da->createBalanceRec(acc->accnt_no, 0, 0)) {
+                _response.body.creat_accnt.m_dwResult = cnp::CER_SUCCESS;
+                _response.body.creat_accnt.m_qwPAN = acc->accnt_no;
+                delete acc;
+                return;
+            }
         }
 
     }
@@ -239,12 +253,14 @@ void CNProtoHandler::_handleDeposit() {
     const ClientEntity &ce = _cm->getByID(cid);
 
     if (ce.state_ != ClientEntity::CL_LOGON) {
+        LOGE("Account[" << ce.accnt_.accnt_no << "] Not Logged on.");
         _response.body.deposit.m_dwResult = cnp::CER_CLIENT_NOT_LOGGEDON;
         return;
     }
 
     accno = ce.accnt_.accnt_no;
 
+    _response.body.deposit.m_dwResult = cnp::CER_ERROR;
     accBl = _da->getAccntBalance(accno);
     accntType = _request.body.deposit.m_wType == cnp::DT_CASH? atm_data::AccntBalance::AT_CASH: atm_data::AccntBalance::AT_CHECK;
 
@@ -261,8 +277,7 @@ void CNProtoHandler::_handleDeposit() {
         }
     }
 
-    _response.body.deposit.m_dwResult = cnp::CER_ERROR;
-
+    _buff = (char *)&_response;
 }
 
 
@@ -328,6 +343,8 @@ void CNProtoHandler::_handleBalanceLookup() {
     cid = _request.header.m_wClientID;
     const ClientEntity &ce = _cm->getByID(cid);
 
+    _buff = (char *)&_response;
+
     if (ce.state_ != ClientEntity::CL_LOGON) {
         _response.body.deposit.m_dwResult = cnp::CER_CLIENT_NOT_LOGGEDON;
         return;
@@ -340,14 +357,41 @@ void CNProtoHandler::_handleBalanceLookup() {
         _response.body.balance_q.m_dwResult = cnp::CER_SUCCESS;
         _response.body.balance_q.m_dwCashBalance = accBl->cash;
         _response.body.balance_q.m_dwCheckBalance = accBl->check;
-        _buff = (char *)&_response;
         delete accBl;
         return;
     }
 
     _response.body.deposit.m_dwResult = cnp::CER_ERROR;
 
+
 }
+
+
+void CNProtoHandler::_handleLogOff() {
+
+    size_t _sz = sizeof(_response.body.logoff);
+    _response.header.m_dwMsgType = cnp::MT_LOGOFF_RESPONSE_ID;
+    _response.header.m_wDataLen = _sz;
+    _res_msg_size += _sz;
+
+    ClientsManager::cid_t cid = _request.header.m_wClientID;
+    const ClientEntity &ce = _cm->getByID(cid);
+    _buff = (char *)&_response;
+
+    if (ce.state_ != ClientEntity::CL_LOGON) {
+        _response.body.logoff.m_dwResult = cnp::CER_INVALID_CLIENTID;
+        return;
+    }
+
+
+    LOGI("account [ " << ce.accnt_.accnt_no << " ] logged off");
+    _cm->remove(cid);
+    _cm->setClientState(cid, ClientEntity::CL_CONNECTED);
+    _response.body.logoff.m_dwResult = cnp::CER_SUCCESS;
+
+}
+
+
 
 bool CNProtoHandler::generate_content() {
 
@@ -382,6 +426,10 @@ bool CNProtoHandler::generate_content() {
 
         case cnp::MT_BALANCE_QUERY_REQUEST_ID:
             _handleBalanceLookup();
+            break;
+
+        case cnp::MT_LOGOFF_REQUEST_ID:
+            _handleLogOff();
             break;
 
         default:
