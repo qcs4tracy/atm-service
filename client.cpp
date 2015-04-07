@@ -323,7 +323,7 @@ void recvRsp() {
 
             if (rsp.body.logoff.m_dwResult != cnp::CER_SUCCESS) {
                 cout << "Invalid client ID or Account not logged on" << endl;
-                return;
+                break;
             }
 
             cout << "Log off succeed" << endl;
@@ -334,7 +334,7 @@ void recvRsp() {
 
             if (rsp.body.creat_accnt.m_dwResult != cnp::CER_SUCCESS) {
                 LOGE("Create Account Failed");
-                return;
+                break;
             }
 
             cout << "Account Created: the Account NO. assigned is " << rsp.body.creat_accnt.m_qwPAN << endl;
@@ -345,7 +345,7 @@ void recvRsp() {
             if (rsp.body.logon.m_dwResult == cnp::CER_SUCCESS) {
                 cout << "Logged on." << endl;
                 logged_on = true;
-                return;
+                break;
             }
 
             if (rsp.body.logon.m_dwResult == cnp::CER_INVALID_NAME_PIN) {
@@ -360,7 +360,7 @@ void recvRsp() {
 
             if (rsp.body.balance_q.m_dwResult != cnp::CER_SUCCESS) {
                 cerr << "Query Balance failed" << endl;
-                return;
+                break;
             }
 
             cout << "cash balance: " << (double)rsp.body.balance_q.m_dwCashBalance/100
@@ -371,7 +371,7 @@ void recvRsp() {
 
             if (rsp.body.deposit.m_dwResult != cnp::CER_SUCCESS) {
                 cerr << "Deposit Request failed" << endl;
-                return;
+                break;
             }
 
             cout << "Deposit Succeed" << endl;
@@ -391,6 +391,7 @@ void recvRsp() {
             }
 
             cout << "Withdrwal Succeed" << endl;
+            break;
 
         default:
 
@@ -398,6 +399,7 @@ void recvRsp() {
             break;
     }
 
+    cout << endl;
 }
 
 

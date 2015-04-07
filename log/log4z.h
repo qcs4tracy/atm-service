@@ -343,7 +343,7 @@ _ZSUMMER_END
 		char logBuf[LOG4Z_LOG_BUF_SIZE];\
 		zsummer::log4z::Log4zStream ss(logBuf, LOG4Z_LOG_BUF_SIZE);\
 		ss << log;\
-		zsummer::log4z::ILog4zManager::getPtr()->pushLog(id, level, logBuf, __FILE__, __LINE__);\
+		zsummer::log4z::ILog4zManager::getPtr()->pushLog(id, level, logBuf);\
 	}\
 }
 

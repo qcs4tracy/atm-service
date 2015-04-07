@@ -324,6 +324,8 @@ void CNProtoHandler::_handleWithdraw() {
 
     }
 
+    _buff = (char *)&_response;
+
 }
 
 
