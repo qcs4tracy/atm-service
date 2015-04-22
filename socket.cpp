@@ -4,6 +4,7 @@
 
 #include "socket.h"
 #include "log4z.h"
+#include <arpa/inet.h>
 #include <cstring>
 
 using namespace zsummer::log4z;
@@ -151,12 +152,22 @@ sock::TCPCommunicateSocket* sock::TCPServerSocket::accept() {
     return NULL;
 }
 
+// Function to fill in address structure given an address and port
+static void fillAddr(const string &address, unsigned short port,
+                     sockaddr_in &addr) {
+    memset(&addr, 0, sizeof(addr));  // Zero out address structure
+    addr.sin_family = AF_INET;       // Internet address
 
-bool sock::TCPClientSocket::connect(in_addr_t host, int port) {
+    if (!inet_aton(address.c_str(), &addr.sin_addr)) {
+        LOGE("Invalid IP address: " << address);
+    }
 
-    addr_.sin_addr.s_addr = htonl(host);
-    addr_.sin_port = htons(port);
-    addr_.sin_family = AF_INET;
+    addr.sin_port = htons(port);     // Assign port in network byte order
+}
+
+bool sock::TCPClientSocket::connect(std::string host, unsigned short port) {
+
+    fillAddr(host, port, addr_);
     sock_len = sizeof(addr_);
 
     if (is_valid()) {

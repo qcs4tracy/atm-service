@@ -4,7 +4,6 @@
 
 #include "socket.h"
 #include "CNP_Protocol.h"
-#include <iostream>
 #include "time_utils.h"
 #include "log4z.h"
 #include "proto_impl.h"
@@ -25,7 +24,7 @@ bool sendConnectReq() {
     if ( cs.send(reinterpret_cast<char *>(&cq), sizeof(cq)) > 0)
         return true;
 
-    return false;
+    return cs.send(reinterpret_cast<char *>(&cq), sizeof(cq)) > 0;
 }
 
 
@@ -479,11 +478,19 @@ void level2_menu() {
 
 
 
-int main() {
+int main(int argc, const char *argv[]) {
 
     ILog4zManager::getInstance()->start();
 
-    if (!cs.connect(INADDR_LOOPBACK, 5999)) {
+    if (argc < 3) {
+        cerr << "Usage: ./cnp-atm-client <IP address> <port>" << endl;
+        exit(255);
+    }
+
+    string ip(argv[1]);
+    unsigned short port = ::atoi(argv[2]);
+
+    if (!cs.connect(ip, port)) {
         LOGF("Fail to connect the server");
         exit(2);
     }

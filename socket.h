@@ -134,7 +134,7 @@ namespace sock {
         }
 
         //bool connect(struct sockaddr_in *addr, socklen_t len);
-        bool connect(in_addr_t host, int port);
+        bool connect(std::string host, unsigned short port);
     };
 
 }

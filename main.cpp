@@ -1,6 +1,4 @@
 #include <iostream>
-#include "CNP_Protocol.h"
-#include <map>
 #include "AtmDataAccess.h"
 using namespace std;
 using namespace atm_data;
@@ -14,7 +12,7 @@ int main () {
 
     ILog4zManager::getInstance()->start();
     ioloop::IOLoop ioloop(1024);
-    ioloop.setup_listen_sock(INADDR_LOOPBACK, 5999);
+    ioloop.setup_listen_sock(INADDR_ANY, 5999);
     ioloop.enable_listning(1024);
     ioloop.start();
 
